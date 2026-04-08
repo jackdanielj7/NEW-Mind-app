@@ -5,10 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { useAuth } from '../contexts/AuthContext';
 
 interface StatCardProps {
   value: string;
@@ -26,13 +29,35 @@ const StatCard = ({ value, label, icon }: StatCardProps) => (
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
+  const userStats = user?.stats || {};
+  
   const stats = [
-    { value: '7', label: 'მაინდფულ დღეები', icon: 'calendar-check' },
-    { value: '45', label: 'მაინდფულ წუთები', icon: 'meditation' },
-    { value: '12', label: 'სულ სესიები', icon: 'headphones' },
-    { value: '3', label: 'სულ კურსები', icon: 'school' },
+    { value: String(userStats.mindful_days || 0), label: 'მაინდფულ დღეები', icon: 'calendar-check' },
+    { value: String(userStats.mindful_minutes || 0), label: 'მაინდფულ წუთები', icon: 'meditation' },
+    { value: String(userStats.total_sessions || 0), label: 'სულ სესიები', icon: 'headphones' },
+    { value: String(userStats.total_courses || 0), label: 'სულ კურსები', icon: 'school' },
   ];
+
+  const handleLogout = () => {
+    Alert.alert(
+      'გასვლა',
+      'ნამდვილად გსურთ გასვლა?',
+      [
+        { text: 'გაუქმება', style: 'cancel' },
+        { 
+          text: 'გასვლა', 
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/auth/login');
+          }
+        },
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -49,11 +74,11 @@ export default function ProfileScreen() {
                 colors={['#3a6a8e', '#1a4a6e']}
                 style={styles.avatar}
               >
-                <Text style={styles.avatarText}>მ</Text>
+                <Text style={styles.avatarText}>{user?.name?.charAt(0)?.toUpperCase() || 'მ'}</Text>
               </LinearGradient>
             </View>
-            <Text style={styles.userName}>მომხმარებელი</Text>
-            <Text style={styles.userEmail}>user@example.com</Text>
+            <Text style={styles.userName}>{user?.name || 'მომხმარებელი'}</Text>
+            <Text style={styles.userEmail}>{user?.email || ''}</Text>
             <TouchableOpacity style={styles.editButton}>
               <Text style={styles.editButtonText}>პროფილის რედაქტირება</Text>
             </TouchableOpacity>
@@ -85,12 +110,12 @@ export default function ProfileScreen() {
             <View style={styles.streaksRow}>
               <View style={styles.streakItem}>
                 <MaterialCommunityIcons name="fire" size={32} color="#4fc3dc" />
-                <Text style={styles.streakValue}>7 დღე</Text>
+                <Text style={styles.streakValue}>{userStats.current_streak || 0} დღე</Text>
                 <Text style={styles.streakLabel}>მიმდინარე სერია</Text>
               </View>
               <View style={styles.streakItem}>
                 <MaterialCommunityIcons name="trophy" size={32} color="#4fc3dc" />
-                <Text style={styles.streakValue}>14 დღე</Text>
+                <Text style={styles.streakValue}>{userStats.longest_streak || 0} დღე</Text>
                 <Text style={styles.streakLabel}>ყველაზე გრძელი</Text>
               </View>
             </View>
@@ -110,6 +135,13 @@ export default function ProfileScreen() {
                 <Ionicons name="chevron-forward" size={20} color="#7a9bb8" />
               </TouchableOpacity>
             ))}
+            
+            {/* Logout Button */}
+            <TouchableOpacity style={styles.logoutItem} activeOpacity={0.8} onPress={handleLogout}>
+              <MaterialCommunityIcons name="logout" size={24} color="#ff6b6b" />
+              <Text style={styles.logoutLabel}>გასვლა</Text>
+              <Ionicons name="chevron-forward" size={20} color="#ff6b6b" />
+            </TouchableOpacity>
           </View>
 
           <View style={{ height: 30 }} />
@@ -269,6 +301,19 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: '#fff',
+    marginLeft: 12,
+  },
+  logoutItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 107, 107, 0.2)',
+  },
+  logoutLabel: {
+    flex: 1,
+    fontSize: 16,
+    color: '#ff6b6b',
     marginLeft: 12,
   },
 });
